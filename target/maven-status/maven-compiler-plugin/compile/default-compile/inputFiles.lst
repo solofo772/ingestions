@@ -1,0 +1,7 @@
+/home/oliver/flink/FlinkCommerce/src/main/java/Dto/SalesPerMonth.java
+/home/oliver/flink/FlinkCommerce/src/main/java/Deserializer/JSONValueDeserializationSchema.java
+/home/oliver/flink/FlinkCommerce/src/main/java/utils/JsonUtil.java
+/home/oliver/flink/FlinkCommerce/src/main/java/Dto/SalesPerDay.java
+/home/oliver/flink/FlinkCommerce/src/main/java/Dto/SalesPerCategory.java
+/home/oliver/flink/FlinkCommerce/src/main/java/FlinkCommerce/DataStreamJob.java
+/home/oliver/flink/FlinkCommerce/src/main/java/Dto/Transaction.java

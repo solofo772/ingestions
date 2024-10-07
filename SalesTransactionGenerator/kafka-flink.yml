@@ -1,0 +1,99 @@
+version: '3.8'
+
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.0
+    hostname: zookeeper
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    healthcheck:
+      test: [ "CMD", "bash", "-c", "echo 'ruok' | nc localhost 2181" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - flink-network
+
+  broker:
+    image: confluentinc/cp-kafka:7.4.0
+    hostname: broker
+    container_name: broker
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "9101:9101"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:29092,PLAINTEXT_HOST://192.168.43.16:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_CONFLUENT_LICENSE_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CONFLUENT_BALANCER_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_JMX_PORT: 9101
+      KAFKA_JMX_HOSTNAME: broker  # Use the container name here
+    healthcheck:
+      test: [ "CMD", "bash", "-c", 'nc -z 192.168.43.16 9092' ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - flink-network
+
+  connect-source:
+    container_name: connect-source
+    image: quay.io/debezium/connect:2.1
+    ports:
+      - "8083:8083"
+    depends_on:
+      - kafka-source
+    environment:
+      - BOOTSTRAP_SERVERS=192.168.43.16:9092
+      - GROUP_ID=2
+      - CONFIG_STORAGE_TOPIC=my_connect_configs_dest
+      - OFFSET_STORAGE_TOPIC=my_connect_offsets_dest
+      - STATUS_STORAGE_TOPIC=my_connect_statuses_dest
+    networks:
+      - flink-network
+
+  kafdrop:
+    image: provectuslabs/kafka-ui
+    ports:
+      - "8019:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: team_oliver
+      KAFKA_CLUSTERS_0_BOOTSTRAP_SERVERS: "192.168.43.16:9092"
+    depends_on:
+      - broker
+    networks:
+      - flink-network
+
+  mirror-maker:
+    image: confluentinc/cp-kafka:7.0.1
+    container_name: kafka-mirror-maker
+    volumes:
+      - ./consumer.cfg:/etc/consumer.cfg
+      - ./producer.cfg:/etc/producer.cfg
+    command: >
+      bash -c "
+      cub kafka-ready -b 192.168.43.16:9092 1 30 &&
+      cub kafka-ready -b 154.120.150.40:9092 1 30 &&
+      kafka-mirror-maker --consumer.config /etc/consumer.cfg --producer.config /etc/producer.cfg --whitelist '.*' --num.streams 1
+      "
+    depends_on:
+      - broker
+    networks:
+      - flink-network
+
+
+networks:
+  flink-network:
+    driver: bridge

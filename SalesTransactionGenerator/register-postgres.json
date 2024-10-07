@@ -1,0 +1,12 @@
+{
+   "name": "oliver-connector",
+   "config": {
+      "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+      "database.hostname": "192.168.43.16",
+      "database.port": "5432",
+      "database.user": "root",
+      "database.password": "root",
+      "database.dbname" : "exempledb",
+      "topic.prefix": "Flink"
+      }
+}
