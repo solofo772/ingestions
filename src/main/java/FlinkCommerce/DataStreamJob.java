@@ -275,7 +275,8 @@ public class DataStreamJob {
                             requestIndexer.add(indexRequest);
                         })
                         .build()
-        ).name("Elasticsearch Sink");**/
+        ).name("Elasticsearch Sink"); GET /_cat/indices?v
+**/
 
         // Execute program, beginning computation.
         env.execute("Flink Ecommerce Realtime Streaming");
